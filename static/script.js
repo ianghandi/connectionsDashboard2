@@ -1,6 +1,8 @@
 // script.js
 
+// Environment options
 const environments = ["Dev", "QA", "Stage", "Prod", "Sandbox"];
+
 const environmentSelect = document.getElementById("environmentSelect");
 const connectionTypeSelect = document.getElementById("connectionTypeSelect");
 const loadButton = document.getElementById("loadButton");
@@ -8,19 +10,20 @@ const downloadCsvButton = document.getElementById("downloadCsv");
 const errorBanner = document.getElementById("errorBanner");
 const loadingSpinner = document.getElementById("loadingSpinner");
 const columnSelector = document.getElementById("columnSelector");
-let table = null;
+const globalSearchInput = document.getElementById("globalSearchInput");
 
+let table = null;
+const apiCache = {}; // Frontend cache for API responses
+
+// Signing Key Owner Mapping
 const signingKeyOwnerMap = {
   "g0t7grow21iko1fhef8g8u810": "Alice",
   "tmmc2ofka2v145u74vol50hf1": "Bob",
   "0o42t0uup6apkv069v3ia7mga": "Charlie"
-  // Add more mappings as you want
+  // Add more mappings if needed
 };
 
-// API response cache
-const apiCache = {}; // { "Dev-saml": [data], ... }
-
-// SAML Columns
+// Column Definitions for SAML
 const columnsSAML = [
   { title: "Name", field: "name" },
   { title: "Entity ID", field: "entityId" },
@@ -29,20 +32,18 @@ const columnsSAML = [
   { title: "Enabled Profiles", field: "spBrowserSso.enabledProfiles", formatter: "array" },
   { title: "Incoming Bindings", field: "spBrowserSso.incomingBindings", formatter: "array" },
   { title: "SSO Application Endpoint", field: "spBrowserSso.ssoApplicationEndpoint" },
+  { title: "Signing Key Owner", formatter: function(cell) {
+      const signingKeyId = cell.getRow().getData()?.credentials?.signingSettings?.signingKeyPairRef?.id || "";
+      return signingKeyOwnerMap[signingKeyId] || signingKeyId || "Unknown";
+    }
+  },
   { title: "Creation Date", field: "creationDate" },
   { title: "Modification Date", field: "modificationDate" },
   { title: "Replication Status", field: "replicationStatus" },
   { title: "Target Type", field: "connectionTargetType" }
-  {
-  title: "Signing Key Owner",
-  formatter: function(cell) {
-    const signingKeyId = cell.getRow().getData()?.credentials?.signingSettings?.signingKeyPairRef?.id || "";
-    return signingKeyOwnerMap[signingKeyId] || signingKeyId || "Unknown";
-    }
-  }
 ];
 
-// OAuth Columns
+// Column Definitions for OAuth
 const columnsOAuth = [
   { title: "Client ID", field: "clientId" },
   { title: "Name", field: "name" },
@@ -52,7 +53,7 @@ const columnsOAuth = [
   { title: "Allowed Scopes", field: "allowedScopes", formatter: "array" },
   { title: "AD ID", formatter: function(cell) {
       const desc = cell.getRow().getData().description || "";
-      const cleanDesc = desc.replace(/\s+/g, ' '); // Normalize all whitespace
+      const cleanDesc = desc.replace(/\s+/g, ' '); // Normalize whitespace
       const match = cleanDesc.match(/AD\d+/);
       return match ? match[0] : "";
     }
@@ -69,14 +70,14 @@ environments.forEach(env => {
   environmentSelect.appendChild(option);
 });
 
-// When connection type changes, rebuild column selector
+// Rebuild column selector when connection type changes
 connectionTypeSelect.addEventListener("change", () => {
   if (connectionTypeSelect.value) {
     populateColumnSelector(connectionTypeSelect.value);
   }
 });
 
-// Populate column selector dynamically
+// Populate column selector checkboxes dynamically
 function populateColumnSelector(type) {
   columnSelector.innerHTML = '';
   const columns = type === "saml" ? columnsSAML : columnsOAuth;
@@ -105,13 +106,13 @@ function setLoading(isLoading) {
   loadingSpinner.classList.toggle("hidden", !isLoading);
 }
 
-// Show error
+// Show error message
 function showError(message) {
   errorBanner.textContent = message;
   errorBanner.classList.remove("hidden");
 }
 
-// Hide error
+// Hide error message
 function hideError() {
   errorBanner.classList.add("hidden");
 }
@@ -178,12 +179,12 @@ loadButton.addEventListener("click", async () => {
       data: items,
       layout: "fitColumns",
       columns: selectedColumns,
-      pagination: true,
-      paginationSize: 10,
+      pagination: false, // No pagination, we use virtual scrolling
+      scrollVertical: true, // Enable virtual scrolling
       responsiveLayout: true
     });
 
-    wrapper.classList.remove("opacity-0"); // Trigger fade-in
+    wrapper.classList.remove("opacity-0"); // Fade in
 
   } catch (error) {
     console.error(error);
@@ -199,6 +200,19 @@ downloadCsvButton.addEventListener("click", () => {
     table.download("csv", "connections.csv");
   } else {
     showError("No data to export.");
+  }
+});
+
+// Global Search across all columns
+globalSearchInput.addEventListener("input", function() {
+  const searchTerm = this.value.toLowerCase();
+
+  if (table) {
+    table.setFilter(function(data, filterParams) {
+      return Object.values(data).some(value =>
+        String(value).toLowerCase().includes(searchTerm)
+      );
+    });
   }
 });
 
