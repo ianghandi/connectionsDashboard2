@@ -36,6 +36,12 @@ const columnsOAuth = [
   { title: "Grant Types", field: "grantTypes", formatter: "array" },
   { title: "Redirect URIs", field: "redirectUris", formatter: "array" },
   { title: "Allowed Scopes", field: "allowedScopes", formatter: "array" },
+  { title: "AD ID", formatter: function(cell) {
+    const desc = cell.getRow().getData().description || "";
+    const match = desc.match(/AD\\d{8}/);
+    return match ? match[0] : "";
+    }
+  },
   { title: "Creation Date", field: "creationDate" },
   { title: "Modification Date", field: "modificationDate" }
 ];
