@@ -10,6 +10,13 @@ const loadingSpinner = document.getElementById("loadingSpinner");
 const columnSelector = document.getElementById("columnSelector");
 let table = null;
 
+const signingKeyOwnerMap = {
+  "g0t7grow21iko1fhef8g8u810": "Alice",
+  "tmmc2ofka2v145u74vol50hf1": "Bob",
+  "0o42t0uup6apkv069v3ia7mga": "Charlie"
+  // Add more mappings as you want
+};
+
 // API response cache
 const apiCache = {}; // { "Dev-saml": [data], ... }
 
@@ -26,6 +33,13 @@ const columnsSAML = [
   { title: "Modification Date", field: "modificationDate" },
   { title: "Replication Status", field: "replicationStatus" },
   { title: "Target Type", field: "connectionTargetType" }
+  {
+  title: "Signing Key Owner",
+  formatter: function(cell) {
+    const signingKeyId = cell.getRow().getData()?.credentials?.signingSettings?.signingKeyPairRef?.id || "";
+    return signingKeyOwnerMap[signingKeyId] || signingKeyId || "Unknown";
+    }
+  }
 ];
 
 // OAuth Columns
