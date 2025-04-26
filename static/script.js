@@ -37,9 +37,10 @@ const columnsOAuth = [
   { title: "Redirect URIs", field: "redirectUris", formatter: "array" },
   { title: "Allowed Scopes", field: "allowedScopes", formatter: "array" },
   { title: "AD ID", formatter: function(cell) {
-    const desc = cell.getRow().getData().description || "";
-    const match = desc.match(/AD\\d{8}/);
-    return match ? match[0] : "";
+      const desc = cell.getRow().getData().description || "";
+      const cleanDesc = desc.replace(/\s+/g, ' '); // Normalize all whitespace
+      const match = cleanDesc.match(/AD\d+/);
+      return match ? match[0] : "";
     }
   },
   { title: "Creation Date", field: "creationDate" },
