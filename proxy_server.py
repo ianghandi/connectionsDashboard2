@@ -1,10 +1,9 @@
 import os
 import secrets
-import string
-import requests
-import jwt
 import hashlib
 import base64
+import requests
+import jwt
 from flask import Flask, request, jsonify, redirect, session, url_for, render_template, send_from_directory
 from flask_session import Session
 from datetime import timedelta
@@ -16,6 +15,7 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 Session(app)
 
+# PKCE Helper
 def generate_pkce_pair():
     code_verifier = secrets.token_urlsafe(64)
     code_challenge = base64.urlsafe_b64encode(
@@ -23,6 +23,7 @@ def generate_pkce_pair():
     ).rstrip(b'=').decode('utf-8')
     return code_verifier, code_challenge
 
+# Login Required Decorator
 def login_required(f):
     from functools import wraps
     @wraps(f)
@@ -32,6 +33,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# Login Route
 @app.route('/login')
 def login():
     code_verifier, code_challenge = generate_pkce_pair()
@@ -48,6 +50,7 @@ def login():
     )
     return redirect(auth_url)
 
+# Callback Route
 @app.route('/callback')
 def callback():
     code = request.args.get('code')
@@ -89,21 +92,25 @@ def callback():
 
     return redirect('/')
 
+# Logout Route
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect('/')
 
+# Home Route
 @app.route('/')
 @login_required
 def index():
     return send_from_directory('static', 'index.html')
 
+# Static File Serving
 @app.route('/static/<path:path>')
 @login_required
 def send_static(path):
     return send_from_directory('static', path)
 
+# API Proxy for Connections
 @app.route('/api/get-connections', methods=['GET'])
 @login_required
 def get_connections():
@@ -121,26 +128,79 @@ def get_connections():
     username = env_config['username']
     password = env_config['password']
 
-    if connection_type.lower() == "saml":
-        endpoint = "/pf-admin-api/v1/idp/spConnections"
-    elif connection_type.lower() == "oauth":
-        endpoint = "/pf-admin-api/v1/oauth/clients"
-    else:
-        return jsonify({"error": "Unknown connection type."}), 400
-
-    full_url = base_url + endpoint
-
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "X-XSRF-Header": "PingFederate"
     }
 
-    try:
-        resp = requests.get(full_url, headers=headers, auth=(username, password), verify=False)
-        resp.raise_for_status()
-        return jsonify(resp.json())
-    except requests.RequestException as e:
-        return jsonify({"error": str(e)}), 500
+    if connection_type.lower() == "saml":
+        endpoint = "/pf-admin-api/v1/idp/spConnections"
+        full_url = base_url + endpoint
+        try:
+            resp = requests.get(full_url, headers=headers, auth=(username, password), verify=False)
+            resp.raise_for_status()
+            return jsonify(resp.json())
+        except requests.RequestException as e:
+            return jsonify({"error": str(e)}), 500
+
+    elif connection_type.lower() == "oauth":
+        endpoint = "/pf-admin-api/v1/oauth/clients"
+        full_url = base_url + endpoint
+        try:
+            resp = requests.get(full_url, headers=headers, auth=(username, password), verify=False)
+            resp.raise_for_status()
+            return jsonify(resp.json())
+        except requests.RequestException as e:
+            return jsonify({"error": str(e)}), 500
+
+    elif connection_type.lower() == "pingaccess":
+        # Update headers for PingAccess (application/json)
+        headers = {"Content-Type": "application/json"}
+        
+        applications_url = base_url + "/pa-admin-api/v3/applications"
+        try:
+            resp = requests.get(applications_url, headers=headers, auth=(username, password), verify=False)
+            resp.raise_for_status()
+            apps = resp.json().get("items", [])
+
+            # Fetch additional details for each app
+            results = []
+            for app in apps:
+                app_name = app.get("name", "")
+                site_id = app.get("siteId")
+                virtual_host_ids = app.get("virtualHostIds", [])
+                active = app.get("enabled", False)
+
+                # Fetch first target from site
+                target = ""
+                if site_id is not None:
+                    site_resp = requests.get(f"{base_url}/pa-admin-api/v3/sites/{site_id}", headers=headers, auth=(username, password), verify=False)
+                    if site_resp.ok:
+                        targets = site_resp.json().get("targets", [])
+                        if targets:
+                            target = targets[0].get("destination", "")
+
+                # Fetch first virtual host
+                host = ""
+                if virtual_host_ids:
+                    vh_resp = requests.get(f"{base_url}/pa-admin-api/v3/virtualhosts/{virtual_host_ids[0]}", headers=headers, auth=(username, password), verify=False)
+                    if vh_resp.ok:
+                        host = vh_resp.json().get("host", "")
+
+                results.append({
+                    "appName": app_name,
+                    "target": target,
+                    "host": host,
+                    "active": active
+                })
+
+            return jsonify(results)
+
+        except requests.RequestException as e:
+            return jsonify({"error": str(e)}), 500
+
+    else:
+        return jsonify({"error": "Unknown connection type."}), 400
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

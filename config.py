@@ -13,28 +13,46 @@ ALLOWED_GROUPS = ["app_iam_admins", "app_iam_audit"]
 
 ENVIRONMENTS = {
     "Dev": {
-        "url": "https://ping-dev.example.com",
-        "username": "dev-admin",
-        "password": "dev-password"
+        "url": "https://pingfed-dev.example.com",
+        "username": "admin-dev",
+        "password": "password-dev"
     },
     "QA": {
-        "url": "https://ping-qa.example.com",
-        "username": "qa-admin",
-        "password": "qa-password"
+        "url": "https://pingfed-qa.example.com",
+        "username": "admin-qa",
+        "password": "password-qa"
     },
     "Stage": {
-        "url": "https://ping-stage.example.com",
-        "username": "stage-admin",
-        "password": "stage-password"
+        "url": "https://pingfed-stage.example.com",
+        "username": "admin-stage",
+        "password": "password-stage"
     },
     "Prod": {
-        "url": "https://ping-prod.example.com",
-        "username": "prod-admin",
-        "password": "prod-password"
+        "url": "https://pingfed-prod.example.com",
+        "username": "admin-prod",
+        "password": "password-prod"
     },
     "Sandbox": {
-        "url": "https://ping-sandbox.example.com",
-        "username": "sandbox-admin",
-        "password": "sandbox-password"
+        "url": "https://pingfed-sandbox.example.com",
+        "username": "admin-sandbox",
+        "password": "password-sandbox"
+    },
+
+    # New PingAccess Environments
+    "PA-DEV": {
+        "url": "https://pingaccess-dev.example.com",
+        "username": "admin-pa-dev",
+        "password": "password-pa-dev"
+    },
+    "PA-QA": {
+        "url": "https://pingaccess-qa.example.com",
+        "username": "admin-pa-qa",
+        "password": "password-pa-qa"
+    },
+    "PA-PROD": {
+        "url": "https://pingaccess-prod.example.com",
+        "username": "admin-pa-prod",
+        "password": "password-pa-prod"
     }
 }
+

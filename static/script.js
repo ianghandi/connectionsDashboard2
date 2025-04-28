@@ -1,7 +1,6 @@
 // script.js
 
-// Environment options
-const environments = ["Dev", "QA", "Stage", "Prod", "Sandbox"];
+const environments = ["Dev", "QA", "Stage", "Prod", "Sandbox", "PA-DEV", "PA-QA", "PA-PROD"];
 
 const environmentSelect = document.getElementById("environmentSelect");
 const connectionTypeSelect = document.getElementById("connectionTypeSelect");
@@ -13,17 +12,16 @@ const columnSelector = document.getElementById("columnSelector");
 const globalSearchInput = document.getElementById("globalSearchInput");
 
 let table = null;
-const apiCache = {}; // Frontend cache for API responses
+const apiCache = {}; // frontend cache
 
 // Signing Key Owner Mapping
 const signingKeyOwnerMap = {
   "g0t7grow21iko1fhef8g8u810": "Alice",
   "tmmc2ofka2v145u74vol50hf1": "Bob",
   "0o42t0uup6apkv069v3ia7mga": "Charlie"
-  // Add more mappings if needed
 };
 
-// Column Definitions for SAML
+// Column Definitions
 const columnsSAML = [
   { title: "Name", field: "name" },
   { title: "Entity ID", field: "entityId" },
@@ -43,7 +41,6 @@ const columnsSAML = [
   { title: "Target Type", field: "connectionTargetType" }
 ];
 
-// Column Definitions for OAuth
 const columnsOAuth = [
   { title: "Client ID", field: "clientId" },
   { title: "Name", field: "name" },
@@ -53,13 +50,20 @@ const columnsOAuth = [
   { title: "Allowed Scopes", field: "allowedScopes", formatter: "array" },
   { title: "AD ID", formatter: function(cell) {
       const desc = cell.getRow().getData().description || "";
-      const cleanDesc = desc.replace(/\s+/g, ' '); // Normalize whitespace
+      const cleanDesc = desc.replace(/\s+/g, ' ');
       const match = cleanDesc.match(/AD\d+/);
       return match ? match[0] : "";
     }
   },
   { title: "Creation Date", field: "creationDate" },
   { title: "Modification Date", field: "modificationDate" }
+];
+
+const columnsPingAccess = [
+  { title: "App Name", field: "appName" },
+  { title: "Target", field: "target" },
+  { title: "Virtual Host", field: "host" },
+  { title: "Active", field: "active" }
 ];
 
 // Populate environment dropdown
@@ -70,17 +74,19 @@ environments.forEach(env => {
   environmentSelect.appendChild(option);
 });
 
-// Rebuild column selector when connection type changes
+// Rebuild column selector
 connectionTypeSelect.addEventListener("change", () => {
   if (connectionTypeSelect.value) {
     populateColumnSelector(connectionTypeSelect.value);
   }
 });
 
-// Populate column selector checkboxes dynamically
 function populateColumnSelector(type) {
   columnSelector.innerHTML = '';
-  const columns = type === "saml" ? columnsSAML : columnsOAuth;
+  let columns = [];
+  if (type === "saml") columns = columnsSAML;
+  else if (type === "oauth") columns = columnsOAuth;
+  else if (type === "pingaccess") columns = columnsPingAccess;
 
   columns.forEach((col, idx) => {
     const wrapper = document.createElement("div");
@@ -101,23 +107,19 @@ function populateColumnSelector(type) {
   });
 }
 
-// Show or hide loading spinner
 function setLoading(isLoading) {
   loadingSpinner.classList.toggle("hidden", !isLoading);
 }
 
-// Show error message
 function showError(message) {
   errorBanner.textContent = message;
   errorBanner.classList.remove("hidden");
 }
 
-// Hide error message
 function hideError() {
   errorBanner.classList.add("hidden");
 }
 
-// Load Button Click Handler
 loadButton.addEventListener("click", async () => {
   const environment = environmentSelect.value;
   const type = connectionTypeSelect.value;
@@ -131,7 +133,7 @@ loadButton.addEventListener("click", async () => {
   setLoading(true);
 
   const wrapper = document.getElementById("connectionTableWrapper");
-  wrapper.classList.add("opacity-0"); // Prepare fade-in
+  wrapper.classList.add("opacity-0");
 
   try {
     const cacheKey = `${environment}-${type}`;
@@ -160,10 +162,13 @@ loadButton.addEventListener("click", async () => {
       items = [];
     }
 
-    // Get selected columns
     const selectedColumns = [];
     const checkboxes = columnSelector.querySelectorAll("input[type=checkbox]");
-    const fullColumns = type === "saml" ? columnsSAML : columnsOAuth;
+    let fullColumns = [];
+
+    if (type === "saml") fullColumns = columnsSAML;
+    else if (type === "oauth") fullColumns = columnsOAuth;
+    else if (type === "pingaccess") fullColumns = columnsPingAccess;
 
     checkboxes.forEach(checkbox => {
       if (checkbox.checked) {
@@ -179,12 +184,12 @@ loadButton.addEventListener("click", async () => {
       data: items,
       layout: "fitColumns",
       columns: selectedColumns,
-      pagination: false, // No pagination, we use virtual scrolling
-      scrollVertical: true, // Enable virtual scrolling
+      pagination: false,
+      scrollVertical: true,
       responsiveLayout: true
     });
 
-    wrapper.classList.remove("opacity-0"); // Fade in
+    wrapper.classList.remove("opacity-0");
 
   } catch (error) {
     console.error(error);
@@ -194,7 +199,6 @@ loadButton.addEventListener("click", async () => {
   }
 });
 
-// Download CSV
 downloadCsvButton.addEventListener("click", () => {
   if (table) {
     table.download("csv", "connections.csv");
@@ -203,7 +207,7 @@ downloadCsvButton.addEventListener("click", () => {
   }
 });
 
-// Global Search across all columns
+// Global Search
 globalSearchInput.addEventListener("input", function() {
   const searchTerm = this.value.toLowerCase();
 
@@ -216,7 +220,7 @@ globalSearchInput.addEventListener("input", function() {
   }
 });
 
-// Dark Mode Toggle
+// Dark Mode
 const darkModeToggle = document.getElementById("darkModeToggle");
 darkModeToggle.addEventListener("change", function() {
   document.documentElement.classList.toggle("dark", darkModeToggle.checked);
