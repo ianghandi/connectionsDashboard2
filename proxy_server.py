@@ -163,6 +163,9 @@ def get_connections():
             resp.raise_for_status()
             apps = resp.json().get("items", [])
 
+            site_cache = {}
+            vh_cache = {}
+
             # Fetch additional details for each app
             results = []
             for app in apps:
@@ -171,21 +174,32 @@ def get_connections():
                 virtual_host_ids = app.get("virtualHostIds", [])
                 active = app.get("enabled", False)
 
-                # Fetch first target from site
-                target = ""
-                if site_id is not None:
+            # Fetch first target from site
+            target = ""
+            if site_id is not None:
+                if site_id in site_cache:
+                    targets = site_cache[site_id]
+                else:
                     site_resp = requests.get(f"{base_url}/pa-admin-api/v3/sites/{site_id}", headers=headers, auth=(username, password), verify=False)
                     if site_resp.ok:
                         targets = site_resp.json().get("targets", [])
-                        if targets:
-                            target = targets[0]
+                        site_cache[site_id] = targets
+                    else:
+                        targets = []
+                if targets:
+                    target = targets[0]
 
-                # Fetch first virtual host
-                host = ""
-                if virtual_host_ids:
-                    vh_resp = requests.get(f"{base_url}/pa-admin-api/v3/virtualhosts/{virtual_host_ids[0]}", headers=headers, auth=(username, password), verify=False)
+            # Fetch first virtual host
+            host = ""
+            if virtual_host_ids:
+                vh_id = virtual_host_ids[0]
+                if vh_id in vh_cache:
+                    host = vh_cache[vh_id]
+                else:
+                    vh_resp = requests.get(f"{base_url}/pa-admin-api/v3/virtualhosts/{vh_id}", headers=headers, auth=(username, password), verify=False)
                     if vh_resp.ok:
                         host = vh_resp.json().get("host", "")
+                        vh_cache[vh_id] = host
 
                 results.append({
                     "appName": app_name,
