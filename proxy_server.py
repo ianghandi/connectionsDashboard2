@@ -178,7 +178,7 @@ def get_connections():
                     if site_resp.ok:
                         targets = site_resp.json().get("targets", [])
                         if targets:
-                            target = targets[0].get("destination", "")
+                            target = targets[0]
 
                 # Fetch first virtual host
                 host = ""
