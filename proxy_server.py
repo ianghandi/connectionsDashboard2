@@ -15,7 +15,6 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 Session(app)
 
-# PKCE Helper
 def generate_pkce_pair():
     code_verifier = secrets.token_urlsafe(64)
     code_challenge = base64.urlsafe_b64encode(
@@ -23,7 +22,6 @@ def generate_pkce_pair():
     ).rstrip(b'=').decode('utf-8')
     return code_verifier, code_challenge
 
-# Login Required Decorator
 def login_required(f):
     from functools import wraps
     @wraps(f)
@@ -33,7 +31,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Login Route
 @app.route('/login')
 def login():
     code_verifier, code_challenge = generate_pkce_pair()
@@ -50,7 +47,6 @@ def login():
     )
     return redirect(auth_url)
 
-# Callback Route
 @app.route('/callback')
 def callback():
     code = request.args.get('code')
@@ -66,9 +62,7 @@ def callback():
             'client_id': OAUTH_CONFIG['client_id'],
             'code_verifier': session.get('code_verifier')
         },
-        headers={
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
+        headers={'Content-Type': 'application/x-www-form-urlencoded'},
         verify=False
     )
 
@@ -92,25 +86,21 @@ def callback():
 
     return redirect('/')
 
-# Logout Route
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect('/')
 
-# Home Route
 @app.route('/')
 @login_required
 def index():
     return send_from_directory('static', 'index.html')
 
-# Static File Serving
 @app.route('/static/<path:path>')
 @login_required
 def send_static(path):
     return send_from_directory('static', path)
 
-# API Proxy for Connections
 @app.route('/api/get-connections', methods=['GET'])
 @login_required
 def get_connections():
@@ -128,16 +118,20 @@ def get_connections():
     username = env_config['username']
     password = env_config['password']
 
-    headers = {
+    # Default headers
+    headers_pf = {
         "Content-Type": "application/x-www-form-urlencoded",
         "X-XSRF-Header": "PingFederate"
+    }
+    headers_pa = {
+        "Content-Type": "application/json"
     }
 
     if connection_type.lower() == "saml":
         endpoint = "/pf-admin-api/v1/idp/spConnections"
         full_url = base_url + endpoint
         try:
-            resp = requests.get(full_url, headers=headers, auth=(username, password), verify=False)
+            resp = requests.get(full_url, headers=headers_pf, auth=(username, password), verify=False)
             resp.raise_for_status()
             return jsonify(resp.json())
         except requests.RequestException as e:
@@ -147,26 +141,22 @@ def get_connections():
         endpoint = "/pf-admin-api/v1/oauth/clients"
         full_url = base_url + endpoint
         try:
-            resp = requests.get(full_url, headers=headers, auth=(username, password), verify=False)
+            resp = requests.get(full_url, headers=headers_pf, auth=(username, password), verify=False)
             resp.raise_for_status()
             return jsonify(resp.json())
         except requests.RequestException as e:
             return jsonify({"error": str(e)}), 500
 
     elif connection_type.lower() == "pingaccess":
-        # Update headers for PingAccess (application/json)
-        headers = {"Content-Type": "application/json"}
-        
         applications_url = base_url + "/pa-admin-api/v3/applications"
         try:
-            resp = requests.get(applications_url, headers=headers, auth=(username, password), verify=False)
+            resp = requests.get(applications_url, headers=headers_pa, auth=(username, password), verify=False)
             resp.raise_for_status()
             apps = resp.json().get("items", [])
 
             site_cache = {}
             vh_cache = {}
 
-            # Fetch additional details for each app
             results = []
             for app in apps:
                 app_name = app.get("name", "")
@@ -174,32 +164,32 @@ def get_connections():
                 virtual_host_ids = app.get("virtualHostIds", [])
                 active = app.get("enabled", False)
 
-            # Fetch first target from site
-            target = ""
-            if site_id is not None:
-                if site_id in site_cache:
-                    targets = site_cache[site_id]
-                else:
-                    site_resp = requests.get(f"{base_url}/pa-admin-api/v3/sites/{site_id}", headers=headers, auth=(username, password), verify=False)
-                    if site_resp.ok:
-                        targets = site_resp.json().get("targets", [])
-                        site_cache[site_id] = targets
+                # Fetch first target from site (with caching)
+                target = ""
+                if site_id is not None:
+                    if site_id in site_cache:
+                        targets = site_cache[site_id]
                     else:
-                        targets = []
-                if targets:
-                    target = targets[0]
+                        site_resp = requests.get(f"{base_url}/pa-admin-api/v3/sites/{site_id}", headers=headers_pa, auth=(username, password), verify=False)
+                        if site_resp.ok:
+                            targets = site_resp.json().get("targets", [])
+                            site_cache[site_id] = targets
+                        else:
+                            targets = []
+                    if targets:
+                        target = targets[0]
 
-            # Fetch first virtual host
-            host = ""
-            if virtual_host_ids:
-                vh_id = virtual_host_ids[0]
-                if vh_id in vh_cache:
-                    host = vh_cache[vh_id]
-                else:
-                    vh_resp = requests.get(f"{base_url}/pa-admin-api/v3/virtualhosts/{vh_id}", headers=headers, auth=(username, password), verify=False)
-                    if vh_resp.ok:
-                        host = vh_resp.json().get("host", "")
-                        vh_cache[vh_id] = host
+                # Fetch first virtual host (with caching)
+                host = ""
+                if virtual_host_ids:
+                    vh_id = virtual_host_ids[0]
+                    if vh_id in vh_cache:
+                        host = vh_cache[vh_id]
+                    else:
+                        vh_resp = requests.get(f"{base_url}/pa-admin-api/v3/virtualhosts/{vh_id}", headers=headers_pa, auth=(username, password), verify=False)
+                        if vh_resp.ok:
+                            host = vh_resp.json().get("host", "")
+                            vh_cache[vh_id] = host
 
                 results.append({
                     "appName": app_name,
