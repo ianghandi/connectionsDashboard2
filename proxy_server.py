@@ -4,10 +4,13 @@ import hashlib
 import base64
 import requests
 import jwt
+from dotenv import load_dotenv
 from flask import Flask, request, jsonify, redirect, session, url_for, render_template, send_from_directory
 from flask_session import Session
 from datetime import timedelta
 from config import ENVIRONMENTS, OAUTH_CONFIG, ALLOWED_GROUPS
+
+load_dotenv()
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = os.urandom(24)
