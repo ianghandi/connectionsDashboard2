@@ -78,16 +78,35 @@ def callback():
     if not id_token:
         return "ID Token missing", 400
 
-    decoded = jwt.decode(id_token, options={"verify_signature": False})
+    # Validate the ID token signature + claims
+    try:
+        jwks_url = "https://your-pingfed.example.com/pf/JWKS"  # 🔁 Replace with your real JWKS endpoint
+        expected_issuer = "https://your-pingfed.example.com"   # 🔁 Replace with your PingFederate base URL
+        expected_audience = OAUTH_CONFIG['client_id']
+
+        jwk_client = PyJWKClient(jwks_url)
+        signing_key = jwk_client.get_signing_key_from_jwt(id_token).key
+
+        decoded = jwt.decode(
+            id_token,
+            signing_key,
+            algorithms=["RS256"],
+            audience=expected_audience,
+            issuer=expected_issuer
+        )
+
+    except InvalidTokenError as e:
+        print("❌ Invalid ID token:", e)
+        return "Unauthorized", 401
+
+    # Validate group membership
     groups = decoded.get('attire_memberof', [])
-    email = decoded.get('email') or decoded.get('sub') or "Unknown User"
-    session['email'] = email
-
-
     if not any(group in ALLOWED_GROUPS for group in groups):
         return render_template('unauthorized.html')
 
+    # ✅ Store email and token in session
     session['id_token'] = id_token
+    session['email'] = decoded.get('email') or decoded.get('sub') or "Unknown User"
     session.permanent = True
 
     return redirect('/')
