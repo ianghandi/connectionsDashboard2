@@ -80,6 +80,9 @@ def callback():
 
     decoded = jwt.decode(id_token, options={"verify_signature": False})
     groups = decoded.get('attire_memberof', [])
+    email = decoded.get('email') or decoded.get('sub') or "Unknown User"
+    session['email'] = email
+
 
     if not any(group in ALLOWED_GROUPS for group in groups):
         return render_template('unauthorized.html')
@@ -88,6 +91,12 @@ def callback():
     session.permanent = True
 
     return redirect('/')
+
+@app.route('/api/userinfo', methods=['GET'])
+@login_required
+def userinfo():
+    email = session.get('email', 'Unknown User')
+    return jsonify({"email": email})
 
 @app.route('/logout')
 def logout():

@@ -261,3 +261,18 @@ const darkModeToggle = document.getElementById("darkModeToggle");
 darkModeToggle.addEventListener("change", function() {
   document.documentElement.classList.toggle("dark", darkModeToggle.checked);
 });
+
+// Fetch user email and set it
+fetch('/api/userinfo')
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("userEmail").textContent = data.email || "Unknown User";
+  });
+
+// Toggle dropdown
+const userMenuButton = document.getElementById("userMenuButton");
+const userDropdown = document.getElementById("userDropdown");
+
+userMenuButton.addEventListener("click", () => {
+  userDropdown.classList.toggle("hidden");
+});
