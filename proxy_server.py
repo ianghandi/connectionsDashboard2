@@ -74,18 +74,18 @@ def callback():
     )
 
     if token_response.status_code != 200:
-        return "Failed to fetch tokens", 400
+        return "Failed to exchange code for tokens", 400
 
     tokens = token_response.json()
     id_token = tokens.get('id_token')
 
     if not id_token:
-        return "ID Token missing", 400
+        return "ID token missing", 400
 
-    # Validate the ID token signature + claims
+    # Validate the ID token securely
     try:
-        jwks_url = "https://your-pingfed.example.com/pf/JWKS"  # 🔁 Replace with your real JWKS endpoint
-        expected_issuer = "https://your-pingfed.example.com"   # 🔁 Replace with your PingFederate base URL
+        jwks_url = "https://your-pingfed.example.com/pf/JWKS"  # Replace with real JWKS URL
+        expected_issuer = "https://your-pingfed.example.com"   # Replace with real issuer
         expected_audience = OAUTH_CONFIG['client_id']
 
         jwk_client = PyJWKClient(jwks_url)
@@ -103,12 +103,10 @@ def callback():
         print("❌ Invalid ID token:", e)
         return "Unauthorized", 401
 
-    # Validate group membership
     groups = decoded.get('attire_memberof', [])
     if not any(group in ALLOWED_GROUPS for group in groups):
         return render_template('unauthorized.html')
 
-    # ✅ Store email and token in session
     session['id_token'] = id_token
     session['email'] = decoded.get('email') or decoded.get('sub') or "Unknown User"
     session.permanent = True
