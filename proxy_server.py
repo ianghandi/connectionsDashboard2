@@ -10,6 +10,10 @@ from flask_session import Session
 from datetime import timedelta
 from config import ENVIRONMENTS, OAUTH_CONFIG, ALLOWED_GROUPS
 
+from jwt import PyJWKClient
+import jwt
+from jwt.exceptions import InvalidTokenError
+
 load_dotenv()
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
