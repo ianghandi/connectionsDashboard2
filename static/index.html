@@ -17,9 +17,23 @@
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold">Ping Connection Viewer</h1>
-      <div class="flex items-center">
-        <label for="darkModeToggle" class="mr-2 text-sm">🌗 Dark Mode</label>
-        <input type="checkbox" id="darkModeToggle" class="toggle">
+      
+      <!-- User Menu -->
+      <div class="relative inline-block text-left">
+        <div>
+          <button id="userMenuButton" type="button" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none">
+            <span id="userEmail">Loading...</span>
+            <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+
+        <div id="userDropdown" class="hidden absolute right-0 mt-2 w-36 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5">
+          <div class="py-1">
+            <a href="/logout" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Logout</a>
+          </div>
+        </div>
       </div>
     </div>
 
