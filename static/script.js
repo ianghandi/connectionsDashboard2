@@ -1,6 +1,7 @@
 // script.js
 
 const environments = ["Dev", "QA", "Stage", "Prod", "Sandbox", "PA-DEV", "PA-QA", "PA-PROD"];
+const pingAccessEnvironments = ["PA-DEV", "PA-QA", "PA-PROD"];
 
 const environmentSelect = document.getElementById("environmentSelect");
 const connectionTypeSelect = document.getElementById("connectionTypeSelect");
@@ -74,7 +75,41 @@ environments.forEach(env => {
   environmentSelect.appendChild(option);
 });
 
-// Rebuild column selector
+// Dynamic Connection Type filtering based on environment
+environmentSelect.addEventListener("change", function() {
+  const selectedEnv = environmentSelect.value;
+  const typeDropdown = connectionTypeSelect;
+
+  // Clear current connection type options
+  typeDropdown.innerHTML = "";
+
+  // Add default "-- Choose Type --" option
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.textContent = "-- Choose Type --";
+  typeDropdown.appendChild(defaultOption);
+
+  if (pingAccessEnvironments.includes(selectedEnv)) {
+    // PingAccess environment: Only show PingAccess
+    const option = document.createElement("option");
+    option.value = "pingaccess";
+    option.textContent = "PingAccess";
+    typeDropdown.appendChild(option);
+  } else if (selectedEnv) {
+    // PingFederate environment: Show SAML and OAuth
+    const samlOption = document.createElement("option");
+    samlOption.value = "saml";
+    samlOption.textContent = "SAML";
+    typeDropdown.appendChild(samlOption);
+
+    const oauthOption = document.createElement("option");
+    oauthOption.value = "oauth";
+    oauthOption.textContent = "OAuth";
+    typeDropdown.appendChild(oauthOption);
+  }
+});
+
+// Rebuild column selector when connection type changes
 connectionTypeSelect.addEventListener("change", () => {
   if (connectionTypeSelect.value) {
     populateColumnSelector(connectionTypeSelect.value);
@@ -120,6 +155,7 @@ function hideError() {
   errorBanner.classList.add("hidden");
 }
 
+// Load Button Click Handler
 loadButton.addEventListener("click", async () => {
   const environment = environmentSelect.value;
   const type = connectionTypeSelect.value;
