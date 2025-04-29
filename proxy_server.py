@@ -82,25 +82,30 @@ def callback():
     if not id_token:
         return "ID token missing", 400
 
-    # Validate the ID token securely
     try:
-        jwks_url = "https://your-pingfed.example.com/pf/JWKS"  # Replace with real JWKS URL
-        expected_issuer = "https://your-pingfed.example.com"   # Replace with real issuer
+        # Manual JWKS fetch and key selection
+        jwks_url = "https://your-pingfed.example.com/pf/JWKS"  # Replace with your JWKS URL
+        expected_issuer = "https://your-pingfed.example.com"   # Replace with your issuer URL
         expected_audience = OAUTH_CONFIG['client_id']
 
-        jwk_client = PyJWKClient(jwks_url)
-        signing_key = jwk_client.get_signing_key_from_jwt(id_token).key
+        jwks = requests.get(jwks_url).json()
+        headers = jwt.get_unverified_header(id_token)
+        key = next((k for k in jwks["keys"] if k["kid"] == headers["kid"]), None)
+        if not key:
+            return "Public key not found", 401
+
+        public_key = jwt.algorithms.RSAAlgorithm.from_jwk(key)
 
         decoded = jwt.decode(
             id_token,
-            signing_key,
+            public_key,
             algorithms=["RS256"],
             audience=expected_audience,
             issuer=expected_issuer
         )
 
     except InvalidTokenError as e:
-        print("❌ Invalid ID token:", e)
+        print("Invalid ID token:", e)
         return "Unauthorized", 401
 
     groups = decoded.get('attire_memberof', [])
