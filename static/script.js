@@ -24,17 +24,18 @@ const signingKeyOwnerMap = {
 
 // Column Definitions
 const columnsSAML = [
-  { title: "Name", field: "name" },
-  { title: "Entity ID", field: "entityId" },
-  { title: "Active", field: "active" },
-  { title: "Protocol", field: "spBrowserSso.protocol" },
-  { title: "Enabled Profiles", field: "spBrowserSso.enabledProfiles", formatter: "array" },
-  { title: "Incoming Bindings", field: "spBrowserSso.incomingBindings", formatter: "array" },
-  { title: "SSO Application Endpoint", field: "spBrowserSso.ssoApplicationEndpoint" },
+  { title: "Name", field: "name", resizable: true, widthGrow: 1 },
+  { title: "Entity ID", field: "entityId", resizable: true, widthGrow: 1 },
+  { title: "Active", field: "active", resizable: true, widthGrow: 1 },
+  { title: "Protocol", field: "spBrowserSso.protocol", resizable: true, widthGrow: 1 },
+  { title: "Enabled Profiles", field: "spBrowserSso.enabledProfiles", formatter: "array", resizable: true, widthGrow: 1 },
+  { title: "Incoming Bindings", field: "spBrowserSso.incomingBindings", formatter: "array", resizable: true, widthGrow: 1 },
+  { title: "SSO Application Endpoint", field: "spBrowserSso.ssoApplicationEndpoint", resizable: true, widthGrow: 1 },
   { title: "Signing Key Owner", formatter: function(cell) {
       const signingKeyId = cell.getRow().getData()?.credentials?.signingSettings?.signingKeyPairRef?.id || "";
       return signingKeyOwnerMap[signingKeyId] || signingKeyId || "Unknown";
-    }
+    },
+    resizable: true, widthGrow: 1 
   },
     {
     title: "Extended Properties",
@@ -43,36 +44,38 @@ const columnsSAML = [
       return Object.entries(props)
         .map(([key, val]) => `${key}:${val.values?.[0] || ""}`)
         .join("\n");
-    }
+    },
+    resizable: true, widthGrow: 1 
   },
-  { title: "Modification Date", field: "modificationDate" },
-  { title: "Replication Status", field: "replicationStatus" },
-  { title: "Target Type", field: "connectionTargetType" }
+  { title: "Modification Date", field: "modificationDate", resizable: true, widthGrow: 1 },
+  { title: "Replication Status", field: "replicationStatus", resizable: true, widthGrow: 1 },
+  { title: "Target Type", field: "connectionTargetType", resizable: true, widthGrow: 1 }
 ];
 
 const columnsOAuth = [
-  { title: "Client ID", field: "clientId" },
-  { title: "Name", field: "name" },
-  { title: "Enabled", field: "enabled" },
-  { title: "Grant Types", field: "grantTypes", formatter: "array" },
-  { title: "Redirect URIs", field: "redirectUris", formatter: "array" },
-  { title: "Allowed Scopes", field: "allowedScopes", formatter: "array" },
+  { title: "Client ID", field: "clientId", resizable: true, widthGrow: 1 },
+  { title: "Name", field: "name", resizable: true, widthGrow: 1 },
+  { title: "Enabled", field: "enabled", resizable: true, widthGrow: 1 },
+  { title: "Grant Types", field: "grantTypes", formatter: "array", resizable: true, widthGrow: 1 },
+  { title: "Redirect URIs", field: "redirectUris", formatter: "array", resizable: true, widthGrow: 1 },
+  { title: "Allowed Scopes", field: "allowedScopes", formatter: "array", resizable: true, widthGrow: 1 },
   { title: "AD ID", formatter: function(cell) {
       const desc = cell.getRow().getData().description || "";
       const cleanDesc = desc.replace(/\s+/g, ' ');
       const match = cleanDesc.match(/AD\d+/);
       return match ? match[0] : "";
-    }
+    },
+    resizable: true, widthGrow: 1 
   },
-  { title: "Creation Date", field: "creationDate" },
-  { title: "Modification Date", field: "modificationDate" }
+  { title: "Creation Date", field: "creationDate", resizable: true, widthGrow: 1 },
+  { title: "Modification Date", field: "modificationDate", resizable: true, widthGrow: 1 }
 ];
 
 const columnsPingAccess = [
-  { title: "App Name", field: "appName" },
-  { title: "Target", field: "target" },
-  { title: "Virtual Host", field: "host" },
-  { title: "Active", field: "active" }
+  { title: "App Name", field: "appName", resizable: true, widthGrow: 1 },
+  { title: "Target", field: "target", resizable: true, widthGrow: 1 },
+  { title: "Virtual Host", field: "host", resizable: true, widthGrow: 1 },
+  { title: "Active", field: "active", resizable: true, widthGrow: 1 }
 ];
 
 // Populate environment dropdown
