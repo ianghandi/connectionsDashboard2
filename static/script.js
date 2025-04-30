@@ -188,54 +188,83 @@ function hideError() {
   errorBanner.classList.add("hidden");
 }
 
-// Update load button to use initializeTable
+// Load Button Click Handler
 loadButton.addEventListener("click", async () => {
   const environment = environmentSelect.value;
   const type = connectionTypeSelect.value;
 
   if (!environment || !type) {
-    errorBanner.textContent = "Please select both environment and connection type.";
-    errorBanner.classList.remove("hidden");
+    showError("Please select both environment and connection type.");
     return;
   }
 
-  errorBanner.classList.add("hidden");
-  loadingSpinner.classList.remove("hidden");
+  hideError();
+  setLoading(true);
+
+  const wrapper = document.getElementById("connectionTableWrapper");
+  wrapper.classList.add("opacity-0");
 
   try {
     const cacheKey = `${environment}-${type}`;
     let data;
 
     if (apiCache[cacheKey]) {
+      console.log(`Using cached data for ${cacheKey}`);
       data = apiCache[cacheKey];
     } else {
+      console.log(`Fetching live data for ${cacheKey}`);
       const response = await fetch(`/api/get-connections?environment=${environment}&type=${type}`);
       data = await response.json();
 
       if (data.error) {
-        errorBanner.textContent = `Error: ${data.error}`;
-        errorBanner.classList.remove("hidden");
-        loadingSpinner.classList.add("hidden");
+        showError(`Error: ${data.error}`);
+        setLoading(false);
         return;
       }
 
       apiCache[cacheKey] = data;
     }
 
-    const items = Array.isArray(data.items) ? data.items : data;
-    let selectedColumns = columnsSAML;
-    if (type === "oauth") {
-      selectedColumns = columnsOAuth;
-    } else if (type === "pingaccess") {
-      selectedColumns = columnsPingAccess;
+    let items = data.items || data;
+
+    if (!Array.isArray(items)) {
+      items = [];
     }
-    initializeTable(items, selectedColumns); // adjust this line if using different columns by type
-  } catch (err) {
-    console.error(err);
-    errorBanner.textContent = "Failed to load data.";
-    errorBanner.classList.remove("hidden");
+
+    const selectedColumns = [];
+    const checkboxes = columnSelector.querySelectorAll("input[type=checkbox]");
+    let fullColumns = [];
+
+    if (type === "saml") fullColumns = columnsSAML;
+    else if (type === "oauth") fullColumns = columnsOAuth;
+    else if (type === "pingaccess") fullColumns = columnsPingAccess;
+
+    checkboxes.forEach(checkbox => {
+      if (checkbox.checked) {
+        selectedColumns.push(fullColumns[parseInt(checkbox.value)]);
+      }
+    });
+
+    if (table) {
+      table.destroy();
+    }
+
+    table = new Tabulator("#connectionTable", {
+      data: items,
+      layout: "fitColumns",
+      columns: selectedColumns,
+      pagination: false,
+      scrollVertical: true,
+      responsiveLayout: true
+    });
+
+    wrapper.classList.remove("opacity-0");
+
+  } catch (error) {
+    console.error(error);
+    showError("Failed to fetch connections.");
   } finally {
-    loadingSpinner.classList.add("hidden");
+    setLoading(false);
   }
 });
 
