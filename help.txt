@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Name of the targets file
+TARGETS_FILE="PAtargets.txt"
+
+# Get the hostname
+HOSTNAME=$(hostname)
+
+# Output file
+OUTPUT_FILE="connectivity_results_${HOSTNAME}.txt"
+
+# Read all targets into an array
+mapfile -t TARGETS < "$TARGETS_FILE"
+TOTAL=${#TARGETS[@]}
+
+# Progress counter
+CURRENT=0
+
+# Clear or create output file
+echo "Connectivity Test Results from $HOSTNAME" > "$OUTPUT_FILE"
+echo "Direct Connection (No Proxy)" >> "$OUTPUT_FILE"
+echo "Test Timestamp: $(date)" >> "$OUTPUT_FILE"
+echo "-----------------------------------------" >> "$OUTPUT_FILE"
+
+# Function to display progress
+show_progress() {
+  local PROGRESS=$((CURRENT * 100 / TOTAL))
+  printf "\rProgress: [%-50s] %d%%" $(printf "%0.s#" $(seq 1 $((PROGRESS / 2)))) "$PROGRESS"
+}
+
+# Iterate through targets
+for TARGET in "${TARGETS[@]}"; do
+  if [[ -n "$TARGET" ]]; then
+    ((CURRENT++))
+    show_progress
+
+    # Extract host and port
+    HOST=$(echo "$TARGET" | cut -d':' -f1)
+    PORT=$(echo "$TARGET" | cut -d':' -f2)
+
+    # Test connectivity using ncat and capture output
+    NCAT_OUTPUT=$(ncat -z -v "$HOST" "$PORT" -w 5 2>&1)
+
+    if echo "$NCAT_OUTPUT" | grep -qi "TIMEOUT"; then
+      echo "$TARGET - FAILURE (TIMEOUT)" >> "$OUTPUT_FILE"
+    elif echo "$NCAT_OUTPUT" | grep -qi "Could not resolve hostname"; then
+      echo "$TARGET - WARNING (Could not resolve hostname)" >> "$OUTPUT_FILE"
+    elif echo "$NCAT_OUTPUT" | grep -qi "Connected to"; then
+      echo "$TARGET - SUCCESS (Connected)" >> "$OUTPUT_FILE"
+    else
+      echo "$TARGET - UNKNOWN RESULT" >> "$OUTPUT_FILE"
+    fi
+  fi
+done
+
+# Final newline after progress bar
+echo
+
+echo "-----------------------------------------" >> "$OUTPUT_FILE"
+echo "Connectivity Test Completed." >> "$OUTPUT_FILE"
+
+echo "Results saved to $OUTPUT_FILE"
