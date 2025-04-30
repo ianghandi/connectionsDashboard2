@@ -71,6 +71,28 @@ const columnsOAuth = [
   { title: "Modification Date", field: "modificationDate", resizable: true, widthGrow: 1 }
 ];
 
+// Make sure table respects column resizing and dragging
+const tableOptions = {
+  layout: "fitDataStretch",
+  movableColumns: true,
+  resizableColumns: true,
+  responsiveLayout: true,
+  pagination: false,
+  scrollVertical: true
+};
+
+// Function to initialize table with selected columns and data
+function initializeTable(data, columns) {
+  if (table) {
+    table.destroy();
+  }
+  table = new Tabulator("#connectionTable", {
+    ...tableOptions,
+    data: data,
+    columns: columns
+  });
+}
+
 const columnsPingAccess = [
   { title: "App Name", field: "appName", resizable: true, widthGrow: 1 },
   { title: "Target", field: "target", resizable: true, widthGrow: 1 },
