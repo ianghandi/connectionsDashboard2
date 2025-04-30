@@ -6,11 +6,16 @@ TARGETS_FILE="PAtargets.txt"
 # Get the hostname
 HOSTNAME=$(hostname)
 
-# Output file
-OUTPUT_FILE="connectivity_results_${HOSTNAME}.txt"
+# Define output directory relative to script location
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+OUTPUT_DIR="$SCRIPT_DIR/results/PA"
+mkdir -p "$OUTPUT_DIR"
+
+# Output file path
+OUTPUT_FILE="$OUTPUT_DIR/connectivity_results_${HOSTNAME}.txt"
 
 # Read all targets into an array
-mapfile -t TARGETS < "$TARGETS_FILE"
+mapfile -t TARGETS < "$SCRIPT_DIR/$TARGETS_FILE"
 TOTAL=${#TARGETS[@]}
 
 # Progress counter
@@ -18,7 +23,7 @@ CURRENT=0
 
 # Clear or create output file
 echo "Connectivity Test Results from $HOSTNAME" > "$OUTPUT_FILE"
-echo "Direct Connection (No Proxy)" >> "$OUTPUT_FILE"
+echo "Direct Connection (No Proxy) using curl telnet" >> "$OUTPUT_FILE"
 echo "Test Timestamp: $(date)" >> "$OUTPUT_FILE"
 echo "-----------------------------------------" >> "$OUTPUT_FILE"
 
@@ -38,19 +43,20 @@ for TARGET in "${TARGETS[@]}"; do
     HOST=$(echo "$TARGET" | cut -d':' -f1)
     PORT=$(echo "$TARGET" | cut -d':' -f2)
 
-    # Test connectivity using ncat and capture output
-    NCAT_OUTPUT=$(ncat -z -v "$HOST" "$PORT" -w 5 2>&1)
+    # Use curl with telnet protocol to test connectivity
+    CURL_OUTPUT=$(curl -v telnet://$HOST:$PORT -m 5 2>&1)
 
-    if echo "$NCAT_OUTPUT" | grep -qi "TIMEOUT"; then
+    if echo "$CURL_OUTPUT" | grep -qi "Connection timed out"; then
       echo "$TARGET - FAILURE (TIMEOUT)" >> "$OUTPUT_FILE"
-    elif echo "$NCAT_OUTPUT" | grep -qi "Could not resolve hostname"; then
+    elif echo "$CURL_OUTPUT" | grep -qi "Could not resolve host"; then
       echo "$TARGET - WARNING (Could not resolve hostname)" >> "$OUTPUT_FILE"
-    elif echo "$NCAT_OUTPUT" | grep -qi "Connected to"; then
+    elif echo "$CURL_OUTPUT" | grep -qi "Connected to"; then
       echo "$TARGET - SUCCESS (Connected)" >> "$OUTPUT_FILE"
     else
-      echo "$TARGET - UNKNOWN RESULT" >> "$OUTPUT_FILE"
+      echo "$TARGET - UNKNOWN RESULT ($CURL_OUTPUT)" >> "$OUTPUT_FILE"
     fi
   fi
+
 done
 
 # Final newline after progress bar
