@@ -36,7 +36,15 @@ const columnsSAML = [
       return signingKeyOwnerMap[signingKeyId] || signingKeyId || "Unknown";
     }
   },
-  { title: "Creation Date", field: "creationDate" },
+    {
+    title: "Extended Properties",
+    formatter: function(cell) {
+      const props = cell.getRow().getData()?.extendedProperties || {};
+      return Object.entries(props)
+        .map(([key, val]) => `${key}:${val.values?.[0] || ""}`)
+        .join("\n");
+    }
+  },
   { title: "Modification Date", field: "modificationDate" },
   { title: "Replication Status", field: "replicationStatus" },
   { title: "Target Type", field: "connectionTargetType" }
