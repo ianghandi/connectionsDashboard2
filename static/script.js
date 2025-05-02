@@ -149,6 +149,7 @@ connectionTypeSelect.addEventListener("change", () => {
   }
 });
 
+// Column Selector
 function populateColumnSelector(type) {
   columnSelector.innerHTML = '';
   let columns = [];
